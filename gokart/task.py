@@ -59,6 +59,7 @@ class TaskOnKart(luigi.Task):
     fail_on_empty_dump: bool = ExplicitBoolParameter(default=False, description='Fail when task dumps empty DF', significant=False)
 
     cache_unique_id: bool = ExplicitBoolParameter(default=True, description='Cache unique id during runtime', significant=False)
+    run_def_updates_id: bool = ExplicitBoolParameter(default=False, description='Should changes in run definition update unique id?', significant=False)
 
     def __init__(self, *args, **kwargs):
         self._add_configuration(kwargs, 'TaskOnKart')
@@ -276,7 +277,10 @@ class TaskOnKart(luigi.Task):
         dependencies = [d for d in dependencies if d is not None]
         dependencies.append(self.to_str_params(only_significant=True))
         dependencies.append(self.__class__.__name__)
-        return hashlib.md5(str(dependencies).encode()).hexdigest()
+        hash_value = hashlib.md5(str(dependencies).encode())
+        if self.run_def_updates_id:
+            hash_value.update(self.run.__code__.co_code)
+        return hash_value.hexdigest()
 
     def _get_input_targets(self, target: Union[None, str, TargetOnKart]) -> Union[TargetOnKart, List[TargetOnKart]]:
         if target is None:
